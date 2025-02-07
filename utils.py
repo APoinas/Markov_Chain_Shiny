@@ -1,9 +1,48 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+import matplotlib.animation as animation
+from matplotlib.patches import Rectangle, Circle
 
 #import matplotlib.pyplot as plt
 #import seaborn as sns
+
+########################### General functions ###########################################
+
+def Clear_patches(ax):
+    for p in ax.patches:
+        p.set_visible(False)
+        p.remove()
+
+############################ Visualisation Chaîne de Markov ##############################
+
+def MCupdate(P, k):
+    return np.random.choice(P.shape[0], 1, p=P[k, :])[0]
+
+def MCanimate():
+    nb_frame = 100
+    P = np.array([[0, 1/2, 1/2, 0, 0], [1/2, 0, 1/4, 1/4, 0], [1/4, 1/2, 1/4, 0, 0], [0, 0, 0, 0, 1], [1/4, 0, 0, 1/4, 1/2]])
+
+    fig, ax = plt.subplots()
+    ax.set(xlim=[-1.3, np.sqrt(3)/2 + 0.3], ylim=[-0.3, 1.3], aspect="equal")
+    ax.set_axis_off()
+
+    Circle_centers = [(0, 1), (0, 0), (np.sqrt(3)/2, 1/2), (-1, 0), (-1, 1)]
+    Circle_list = [Circle(cc, 0.2, edgecolor="black", facecolor="white", lw=2) for cc in Circle_centers]
+    for circ in Circle_list:
+        ax.add_patch(circ)
+        
+    chain = [0]
+    for _ in range(nb_frame-1):
+        chain.append(MCupdate(P, chain[-1]))
+
+    def update(frame):
+        Circle_list[chain[frame]].set_edgecolor("red")
+        if frame >= 1 and chain[frame] != chain[frame - 1]:
+            Circle_list[chain[frame - 1]].set_edgecolor("black")
+        return ax
+
+    ani = animation.FuncAnimation(fig=fig, func=update, frames=nb_frame, interval=240)
+    return ani
 
 ############################ Collectionneur Coupons ########################################
 
@@ -126,11 +165,6 @@ def Monopoly_Matrix():
         board_to_prison[:, :, 0] += np.sum(proba_sq, axis=2) * 1 / 16 # Go to Jail [40]
 
     return Create_Proba_Matrix(board, prison, board_to_prison, prison_to_board)
-
-def Clear_patches(ax):
-    for p in ax.patches:
-        p.set_visible(False)
-        p.remove()
 
 def Make_board_M(v, cmap, debug=False):
     # Setting up colors

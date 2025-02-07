@@ -1,0 +1,6 @@
+__pycache__/*
+rsconnect-python/*
+.vscode/*
+
+Command.txt
+Testings.py
