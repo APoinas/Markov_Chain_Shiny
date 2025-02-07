@@ -10,15 +10,12 @@ import seaborn as sns
 
 from pathlib import Path
 from shiny import App, Inputs, Outputs, Session, render, ui, reactive
-from utils import Snake_Ladder_Matrix, Make_board_SL, Vignette_Matrix, Monopoly_Matrix, Clear_patches, Make_board_M, Get_Stationnary, MCanimate
+from utils import Snake_Ladder_Matrix, Make_board_SL, Vignette_Matrix, Monopoly_Matrix, Clear_current_axes, Make_board_M, Get_Stationnary, MCanimate
 
 from IPython.display import HTML # For the animation
 
 app_ui = ui.page_fluid(
     ui.navset_pill(
-        ui.nav_panel("Visualisation",
-            ui.output_ui("Visualisation_CM"),
-        ),
         ui.nav_panel("Echelles et serpents",
             ui.h1("Simulation du jeu des échelles et des serpents", align = "center"),
             ui.layout_columns(
@@ -95,7 +92,10 @@ app_ui = ui.page_fluid(
                 align="center"
             ),
             ui.layout_columns(ui.card(ui.input_action_button("Infinity_M", "Infinity"), align="center"), col_widths=(-5, 2))
-        )
+        ),
+        ui.nav_panel("Visualisation",
+            ui.output_ui("Visualisation_CM"),
+        ),
     )
 )
 
@@ -158,7 +158,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     @render.ui
     def Visualisation_CM():
-        ani = MCanimate()
+        ani = MCanimate(50)
         return HTML(ani.to_jshtml())
 
     @render.plot
@@ -176,10 +176,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         annot[annot == "0.0"] = "<0.01"
         annot = np.char.add(annot, "%")
         
+        Clear_current_axes()
         sns.set_style(style='white')
         ax = sns.heatmap(M, annot=annot, cbar=False, linewidth=.5, linecolor="black", fmt="",
                     xticklabels=False, yticklabels=False, mask=M==0, cmap=sns.color_palette("crest", as_cmap=True))
-        Clear_patches(ax)
         ax.set_xlim(0, 10.1)
         ax.set_ylim(10.1, 0)
         ax.set_aspect(0.7)
@@ -197,10 +197,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         annot[annot == "0.0"] = "<0.01"
         annot = np.char.add(annot, "%")
         
+        Clear_current_axes()
         sns.set_style(style='white')
         ax = sns.heatmap(p, annot=annot, cbar=False, linewidth=.5, linecolor="black", fmt="",
                     xticklabels=False, yticklabels=False, mask=p==0, cmap=sns.color_palette("crest", as_cmap=True))
-        Clear_patches(ax)
         ax.set_xlim(0, n + 1.1)
         ax.set_ylim(-1, 1.1)
         for i in range(n+1):
@@ -227,10 +227,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         M2 = np.append(M2, np.sum(M[120:]))
 
         cmap = sns.color_palette("crest", n_colors=40)
-        try:
-            Clear_patches(ax)
-        except:
-            pass
+        Clear_current_axes()
         fig, ax = Make_board_M(M2, cmap, debug=False)
     
     @render.image

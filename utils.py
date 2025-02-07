@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from matplotlib.patches import Rectangle, Circle
+from matplotlib.patches import Rectangle, Circle, FancyArrowPatch
 
 #import matplotlib.pyplot as plt
 #import seaborn as sns
@@ -13,33 +13,114 @@ def Clear_patches(ax):
         p.set_visible(False)
         p.remove()
 
+def Clear_texts(ax):
+    for p in ax.texts:
+        p.set_visible(False)
+        p.remove()
+
+def Clear_current_axes():
+    try:
+        Clear_patches(plt.gca())
+    except:
+        pass
+    try:
+        Clear_texts(plt.gca())
+    except:
+        pass
+
 ############################ Visualisation Chaîne de Markov ##############################
 
 def MCupdate(P, k):
     return np.random.choice(P.shape[0], 1, p=P[k, :])[0]
 
-def MCanimate():
-    nb_frame = 100
+def MCanimate(nb_frame=100):
+    global P
     P = np.array([[0, 1/2, 1/2, 0, 0], [1/2, 0, 1/4, 1/4, 0], [1/4, 1/2, 1/4, 0, 0], [0, 0, 0, 0, 1], [1/4, 0, 0, 1/4, 1/2]])
 
     fig, ax = plt.subplots()
-    ax.set(xlim=[-1.3, np.sqrt(3)/2 + 0.3], ylim=[-0.3, 1.3], aspect="equal")
+    ax.set(xlim=[-1.3, np.sqrt(3)/2 + 0.5], ylim=[-0.3, 1.3], aspect="equal")
     ax.set_axis_off()
 
+    R = 0.2
     Circle_centers = [(0, 1), (0, 0), (np.sqrt(3)/2, 1/2), (-1, 0), (-1, 1)]
-    Circle_list = [Circle(cc, 0.2, edgecolor="black", facecolor="white", lw=2) for cc in Circle_centers]
+    Circle_centers = [np.array(cc) for cc in Circle_centers]
+    Circle_list = [Circle(cc, R, edgecolor="black", facecolor="white", lw=2) for cc in Circle_centers]
     for circ in Circle_list:
         ax.add_patch(circ)
-        
-    chain = [0]
-    for _ in range(nb_frame-1):
-        chain.append(MCupdate(P, chain[-1]))
+
+    link_list = [(0, 1), (0, 2), (1, 2), (3, 4), (0, 4), (1, 3)]
+    link_type = [2, 2, 2, 2, 0, 1]
+    link_dir = [1, 1, 1, 1, -1, -1]
+    ang_arr = 0.3
+    dico_arr = dict({})
+    for ll, lt, ld in zip(link_list, link_type, link_dir):
+        v = Circle_centers[ll[1]] - Circle_centers[ll[0]]
+        ang = np.angle(v[0] + v[1]* 1j)
+        mov1 = np.array([np.cos(ang - 0.3), np.sin(ang - 0.3)])
+        mov2 = np.array([np.cos(ang + 0.3), np.sin(ang + 0.3)])
+        center = (Circle_centers[ll[1]] + Circle_centers[ll[0]])/2
+        if lt in [0, 2]:
+            if ld == 1:
+                arrow = FancyArrowPatch(Circle_centers[ll[0]] + R * mov1, Circle_centers[ll[1]] - R * mov2, connectionstyle="arc3, rad=" + str(ang_arr), arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color="black")
+                dico_arr["-".join([str(ll[0]), str(ll[1])])] = arrow
+                lab = str(P[ll[0], ll[1]])
+                loc = center + R * (mov1 - mov2)/2
+                rot = ang * 180 / np.pi
+            else:
+                arrow = FancyArrowPatch(Circle_centers[ll[1]] - R * mov2, Circle_centers[ll[0]] + R * mov1, connectionstyle="arc3, rad=" + str(-ang_arr), arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color="black")
+                dico_arr["-".join([str(ll[1]), str(ll[0])])] = arrow
+                lab = str(P[ll[1], ll[0]])
+                loc = center + R * (mov1 - mov2)/2
+                rot = 180 + ang * 180 / np.pi
+            ax.text(loc[0], loc[1], lab, rotation=rot, ha="center", va="center")
+            ax.add_patch(arrow)
+        if lt in [1, 2]:
+            if ld == 1:
+                arrow = FancyArrowPatch(Circle_centers[ll[1]] - R * mov1, Circle_centers[ll[0]] + R * mov2, connectionstyle="arc3, rad=" + str(ang_arr), arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color="black")
+                dico_arr["-".join([str(ll[1]), str(ll[0])])] = arrow
+                lab = str(P[ll[1], ll[0]])
+                loc = center + R * (mov2 - mov1)/2
+                rot = ang * 180 / np.pi
+            else:
+                arrow = FancyArrowPatch(Circle_centers[ll[0]] + R * mov2, Circle_centers[ll[1]] - R * mov1, connectionstyle="arc3, rad=" + str(-ang_arr), arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color="black")
+                dico_arr["-".join([str(ll[0]), str(ll[1])])] = arrow
+                lab = str(P[ll[0], ll[1]])
+                loc = center + R * (mov2 - mov1)/2
+                rot = 180 + ang * 180 / np.pi
+            ax.text(loc[0], loc[1], lab, rotation=rot, ha="center", va="center")
+            ax.add_patch(arrow)
+
+    link_list = [2, 4]
+    ang_list = [0, 3 * np.pi /4]
+    ang_arr = 2
+    for ll, ang in zip(link_list, ang_list):
+        mov1 = np.array([np.cos(ang - 0.3), np.sin(ang - 0.3)])
+        mov2 = np.array([np.cos(ang + 0.3), np.sin(ang + 0.3)])
+        arrow = FancyArrowPatch(Circle_centers[ll] + R * mov1, Circle_centers[ll] + R * mov2, connectionstyle="arc3, rad=" + str(ang_arr), arrowstyle="Simple, tail_width=0.5, head_width=4, head_length=8", color="black")
+        ax.add_patch(arrow)
+        dico_arr["-".join([str(ll), str(ll)])] = arrow
+        loc = Circle_centers[ll] + 1.8 * R * np.array([np.cos(ang), np.sin(ang)])
+        ax.text(loc[0], loc[1], str(P[ll, ll]))
 
     def update(frame):
-        Circle_list[chain[frame]].set_edgecolor("red")
-        if frame >= 1 and chain[frame] != chain[frame - 1]:
-            Circle_list[chain[frame - 1]].set_edgecolor("black")
-        return ax
+        global edge, vertex, P
+        if frame == 0:
+            try:
+                dico_arr[vertex].set_color("black")
+            except:
+                pass
+            edge = 0
+            vertex = None
+            Circle_list[edge].set_edgecolor("red")
+        elif frame % 2 == 1:
+            Circle_list[edge].set_edgecolor("black")
+            new_edge = MCupdate(P, edge)
+            vertex = "-".join([str(edge), str(new_edge)])
+            edge = new_edge
+            dico_arr[vertex].set_color("red")
+        else:
+            dico_arr[vertex].set_color("black")
+            Circle_list[edge].set_edgecolor("red")
 
     ani = animation.FuncAnimation(fig=fig, func=update, frames=nb_frame, interval=240)
     return ani
