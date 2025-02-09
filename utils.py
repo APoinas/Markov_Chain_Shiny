@@ -33,7 +33,7 @@ def Clear_current_axes():
 def MCupdate(P, k):
     return np.random.choice(P.shape[0], 1, p=P[k, :])[0]
 
-def MCanimate(nb_frame=100):
+def MCanimate(nb_frame=100): #TODO: Use OOP to refactor all that garbage.
     global P
     P = np.array([[0, 1/2, 1/2, 0, 0], [1/2, 0, 1/4, 1/4, 0], [1/4, 1/2, 1/4, 0, 0], [0, 0, 0, 0, 1], [1/4, 0, 0, 1/4, 1/2]])
 
@@ -137,12 +137,12 @@ def Vignette_Matrix(n):
 
 def Snake_Ladder_Matrix():
     P = np.zeros((100, 100))
-    for i in range(94):
+    for i in range(94): # Lancer de dés avant la fin
         P[i, (i+1):(i+7)] = 1/6
-    for i in range(94, 100):
+    for i in range(94, 100): # Lancer de dés sur la fin
         P[i, i] = (i-93)/6
         P[i, (i+1):(i+7)] = 1/6
-    for (i, j) in zip([2, 7, 27, 57, 74, 79, 89, 16, 51, 56, 61, 87, 94, 96], [20, 29, 83, 76, 85, 99, 90, 12, 28, 39, 21, 17, 50, 78]):
+    for (i, j) in zip([2, 7, 27, 57, 74, 79, 89, 16, 51, 56, 61, 87, 94, 96], [20, 29, 83, 76, 85, 99, 90, 12, 28, 39, 21, 17, 50, 78]): # Echelles et serpents
         for k in range(100):
             if P[k, i] != 0:
                 P[k, j] = P[k, i]

@@ -15,12 +15,15 @@ from utils import Snake_Ladder_Matrix, Make_board_SL, Vignette_Matrix, Monopoly_
 from IPython.display import HTML # For the animation
 
 app_ui = ui.page_fluid(
+    ui.tags.style(
+        ".action-button { font-size: 30px; text-align: center; padding: 5px 5px; background-color: #e7e7e7; border-radius: 8px; border: 2px solid}"
+    ),
     ui.navset_pill(
         ui.nav_panel("Echelles et serpents",
             ui.h1("Simulation du jeu des échelles et des serpents", align = "center"),
             ui.layout_columns(
                 ui.output_image("Image_SL"),
-                ui.output_plot("Probability_Board", height="550px"),
+                ui.output_plot("Probability_SL", height="550px"),
                 col_widths=(-1, 5, 6),
                 height="450px"
             ),
@@ -35,31 +38,6 @@ app_ui = ui.page_fluid(
                         ui.input_action_button("Increase_move_nb", "+"),
                         col_widths=(3, 6, 3),
                         align="center"
-                    )
-                ),
-                col_widths=(-4, 4),
-                align="center"
-            ),
-        ),
-        ui.nav_panel("Collectionneur de vignettes",
-            ui.h1("Simulation du problème du collectionneur de vignettes", align="center"),
-            ui.layout_columns(
-                ui.card(ui.input_slider("Move_nb_V", "Nombre total de vignettes:", min=1, max=15, value=10), align="center"),
-                col_widths=(-5, 2, 5),
-                align="center",
-            ),
-            ui.div(ui.output_plot("Probability_Vignette", width="1000px", height="200px"), align="center"),
-            ui.layout_columns(
-                ui.card(
-                    ui.layout_columns(
-                        ui.input_action_button("Decrease_move_nb_V", "-"),
-                        ui.div(
-                            ui.output_ui("Display_move_nb_V"),
-                            align="center"
-                        ),
-                        ui.input_action_button("Increase_move_nb_V", "+"),
-                        col_widths=(3, 6, 3),
-                        align="center",
                     )
                 ),
                 col_widths=(-4, 4),
@@ -93,8 +71,34 @@ app_ui = ui.page_fluid(
             ),
             ui.layout_columns(ui.card(ui.input_action_button("Infinity_M", "Infinity"), align="center"), col_widths=(-5, 2))
         ),
+        ui.nav_panel("Collectionneur de vignettes",
+            ui.h1("Simulation du problème du collectionneur de vignettes", align="center"),
+            ui.layout_columns(
+                ui.card(ui.input_slider("Move_nb_V", "Nombre total de vignettes:", min=1, max=15, value=10), align="center"),
+                col_widths=(-5, 2, 5),
+                align="center",
+            ),
+            ui.div(ui.output_plot("Probability_Vignette", width="1000px", height="200px"), align="center"),
+            ui.layout_columns(
+                ui.card(
+                    ui.layout_columns(
+                        ui.input_action_button("Decrease_move_nb_V", "-"),
+                        ui.div(
+                            ui.output_ui("Display_move_nb_V"),
+                            align="center"
+                        ),
+                        ui.input_action_button("Increase_move_nb_V", "+"),
+                        col_widths=(3, 6, 3),
+                        align="center",
+                    )
+                ),
+                col_widths=(-4, 4),
+                align="center"
+            ),
+        ),
         ui.nav_panel("Visualisation",
-            ui.output_ui("Visualisation_CM"),
+            ui.h1("Visualisation de l'évolution d'une chaîne de Markov", align="center"),
+            ui.div(ui.output_ui("Visualisation_CM"), align="center"),
         ),
     )
 )
@@ -120,12 +124,13 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.effect
     @reactive.event(input.Increase_move_nb_M)
     def Increase_move_nb():
-        Move_nb_M.set(Move_nb_M() + 1)
+        if not Infinity_M():
+            Move_nb_M.set(Move_nb_M() + 1)
         
     @reactive.effect
     @reactive.event(input.Decrease_move_nb_M)
     def Decrease_move_nb():
-        if Move_nb_M() >= 1:
+        if Move_nb_M() >= 1 and not Infinity_M():
             Move_nb_M.set(Move_nb_M() - 1)
             
     @reactive.effect
@@ -150,7 +155,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     @render.ui
     def Display_move_nb_M():
-        return ui.HTML(f"Nombre de lancers de dés:<br> {Move_nb_M()}")
+        s = Move_nb_M()
+        if Infinity_M():
+            s = "∞"
+        return ui.HTML(f"Nombre de lancers de dés:<br> {s}")
     
     @render.ui
     def Display_move_nb_V():
@@ -162,7 +170,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         return HTML(ani.to_jshtml())
 
     @render.plot
-    def Probability_Board():
+    def Probability_SL():
         move = Move_nb()
         v = np.zeros((1, 100))
         v[0, 0] = 1
@@ -178,10 +186,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         Clear_current_axes()
         sns.set_style(style='white')
-        ax = sns.heatmap(M, annot=annot, cbar=False, linewidth=.5, linecolor="black", fmt="",
-                    xticklabels=False, yticklabels=False, mask=M==0, cmap=sns.color_palette("crest", as_cmap=True))
-        ax.set_xlim(0, 10.1)
-        ax.set_ylim(10.1, 0)
+        ax = sns.heatmap(M, annot=annot, cbar=False, linewidth=0.7, linecolor="black", fmt="",
+                    xticklabels=False, yticklabels=False, mask=M==0, cmap=sns.color_palette("crest", as_cmap=True), annot_kws={"size": 10, "weight": "normal"})
+        ax.set_xlim(-0.1, 10.1)
+        ax.set_ylim(10.1, -0.1)
         ax.set_aspect(0.7)
     
     @render.plot
