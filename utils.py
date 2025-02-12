@@ -152,7 +152,7 @@ def Snake_Ladder_Matrix():
 def Make_board_SL(v):
     M = np.zeros((10, 10))
     for i in range(10):
-        u = v[0, (100-10*(i+1)):(100-10*i)]
+        u = v[(100-10*(i+1)):(100-10*i)]
         if i % 2 == 0:
             u = np.flip(u)
         M[i, :] = u.flatten()

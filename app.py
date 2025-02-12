@@ -11,8 +11,15 @@ import seaborn as sns
 from pathlib import Path
 from shiny import App, Inputs, Outputs, Session, render, ui, reactive
 from utils import Snake_Ladder_Matrix, Make_board_SL, Vignette_Matrix, Monopoly_Matrix, Clear_current_axes, Make_board_M, Get_Stationnary, MCanimate
+from MC import Markov_Chain
 
 from IPython.display import HTML # For the animation
+
+#TODO: OPTIMIZATION
+#TODO: Looping of the animation
+
+MC_SL = Markov_Chain(Snake_Ladder_Matrix())
+MC_SL.forward()
 
 app_ui = ui.page_fluid(
     ui.tags.style(
@@ -30,12 +37,12 @@ app_ui = ui.page_fluid(
             ui.layout_columns(
                 ui.card(
                     ui.layout_columns(
-                        ui.input_action_button("Decrease_move_nb", "-"),
+                        ui.input_action_button("Decrease_move_nb_SL", "-"),
                         ui.div(
-                            ui.output_ui("Display_move_nb"),
+                            ui.output_ui("Display_move_nb_SL"),
                             align="center"
                         ),
-                        ui.input_action_button("Increase_move_nb", "+"),
+                        ui.input_action_button("Increase_move_nb_SL", "+"),
                         col_widths=(3, 6, 3),
                         align="center"
                     )
@@ -105,21 +112,27 @@ app_ui = ui.page_fluid(
 
 def server(input: Inputs, output: Outputs, session: Session):
     
-    Move_nb = reactive.value(1)
+    global MC_SL
+    
+    Dist_SL = reactive.value(MC_SL.dist)
+    Move_nb_SL = reactive.value(1)
     Move_nb_M = reactive.value(1)
     Move_nb_V = reactive.value(2)
     Infinity_M = reactive.value(False)
     
     @reactive.effect
-    @reactive.event(input.Increase_move_nb)
+    @reactive.event(input.Increase_move_nb_SL)
     def Increase_move_nb():
-        Move_nb.set(Move_nb() + 1)
+        MC_SL.forward()
+        Dist_SL.set(MC_SL.dist)
+        Move_nb_SL.set(MC_SL.step)
         
     @reactive.effect
-    @reactive.event(input.Decrease_move_nb)
+    @reactive.event(input.Decrease_move_nb_SL)
     def Decrease_move_nb():
-        if Move_nb() >= 1:
-            Move_nb.set(Move_nb() - 1)
+        MC_SL.backward()
+        Dist_SL.set(MC_SL.dist)
+        Move_nb_SL.set(MC_SL.step)
             
     @reactive.effect
     @reactive.event(input.Increase_move_nb_M)
@@ -150,8 +163,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         Infinity_M.set(not Infinity_M())
 
     @render.ui
-    def Display_move_nb():
-        return ui.HTML(f"Nombre de lancers de dés:<br> {Move_nb()}")
+    def Display_move_nb_SL():
+        return ui.HTML(f"Nombre de lancers de dés:<br> {Move_nb_SL()}")
     
     @render.ui
     def Display_move_nb_M():
@@ -171,11 +184,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @render.plot
     def Probability_SL():
-        move = Move_nb()
-        v = np.zeros((1, 100))
-        v[0, 0] = 1
-        P = Snake_Ladder_Matrix()
-        M = 100 * Make_board_SL(v.dot(np.linalg.matrix_power(P, move)))
+        M = 100 * Make_board_SL(Dist_SL())
         
         annot = np.zeros((10, 10))
         annot = np.array(["e" for _ in range(100)])
