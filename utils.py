@@ -135,7 +135,10 @@ def Vignette_Matrix(n):
 
 ############################ Snake and ladders ########################################
 
-def Snake_Ladder_Matrix():
+def Snake_Ladder_Matrix(load=False):
+    if load:
+        return np.load("Data/SL_matrix.npy")
+    
     P = np.zeros((100, 100))
     for i in range(94): # Lancer de dés avant la fin
         P[i, (i+1):(i+7)] = 1/6
@@ -160,7 +163,10 @@ def Make_board_SL(v):
 
 ############################ Monopoly ########################################
 
-def Monopoly_Matrix():
+def Monopoly_Matrix(load=False):
+    if load:
+        return np.load("Data/M_matrix.npy")
+    
     board = np.zeros((40, 3, 40, 3))
     prison = np.zeros((3, 3))
     board_to_prison = np.zeros((40, 3, 3))

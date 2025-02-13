@@ -15,11 +15,11 @@ from MC import Markov_Chain
 
 from IPython.display import HTML # For the animation
 
-#TODO: OPTIMIZATION
-#TODO: Looping of the animation
-
-MC_SL = Markov_Chain(Snake_Ladder_Matrix())
+MC_SL = Markov_Chain(Snake_Ladder_Matrix(load=True))
 MC_SL.forward()
+MC_M = Markov_Chain(Monopoly_Matrix(load=True))
+MC_M.forward()
+MC_M._infinity = np.load("Data/M_infinity.npy")
 
 app_ui = ui.page_fluid(
     ui.tags.style(
@@ -115,6 +115,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     global MC_SL
     
     Dist_SL = reactive.value(MC_SL.dist)
+    Dist_M = reactive.value(MC_M.dist)
     Move_nb_SL = reactive.value(1)
     Move_nb_M = reactive.value(1)
     Move_nb_V = reactive.value(2)
@@ -138,13 +139,17 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.Increase_move_nb_M)
     def Increase_move_nb():
         if not Infinity_M():
-            Move_nb_M.set(Move_nb_M() + 1)
+            MC_M.forward()
+            Dist_M.set(MC_M.dist)
+            Move_nb_M.set(MC_M.step)
         
     @reactive.effect
     @reactive.event(input.Decrease_move_nb_M)
     def Decrease_move_nb():
-        if Move_nb_M() >= 1 and not Infinity_M():
-            Move_nb_M.set(Move_nb_M() - 1)
+        if not Infinity_M():
+            MC_M.backward()
+            Dist_M.set(MC_M.dist)
+            Move_nb_M.set(MC_M.step)
             
     @reactive.effect
     @reactive.event(input.Increase_move_nb_V)
@@ -161,6 +166,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.Infinity_M)
     def Switch_Infinity_M():
         Infinity_M.set(not Infinity_M())
+        if Infinity_M():
+            Dist_M.set(MC_M.infinity)
+        else:
+            Dist_M.set(MC_M.dist)
 
     @render.ui
     def Display_move_nb_SL():
@@ -231,15 +240,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     @render.plot
     def Probability_Monopoly():
-        move = Move_nb_M()
-        P = Monopoly_Matrix()
-        if Infinity_M():
-            M = 100 * Get_Stationnary(P)
-        else:
-            v = np.zeros((1, 123))
-            v[0, 0] = 1
-            M = 100 * v.dot(np.linalg.matrix_power(P, move))
-            M = M.flatten()
+        M = 100 * Dist_M()
         M2 = M[:40] + M[40:80] + M[80:120]
         M2 = np.append(M2, np.sum(M[120:]))
 

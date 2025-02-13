@@ -38,4 +38,48 @@ class Markov_Chain:
             v = eigval[:, 0]
             self._infinity = abs(v / sum(v))
         return self._infinity
-            
+    
+class MCA_node:
+    def __init__(self, id, center, radius):
+        self.id = id
+        self.center = center
+
+class MCA_vertex_type:
+    BOTH = 0
+    FORWARD = 1
+
+class MCA_vertex:
+    def __init__(self, id_node1, id_node2, vertex_type):
+        self.id_node1 = id_node1
+        self.id_node2 = id_node2
+        self.type = vertex_type
+
+class Markov_Chain_Anim:
+    def __init__(self, MC, center_coordinates=None, global_radius=None):
+        self.P = MC.P
+        self.n = MC.n
+        self.ini = MC.ini
+        self.global_radius = global_radius if global_radius is not None else 1/(2*self.n)
+        
+        self.nodes = [MCA_node(i, cc) for i, cc in zip(range(self.n), center_coordinates)]
+        if center_coordinates is None:
+            self.nodes = [MCA_node(i, (np.cos(2 * np.pi * i / self.n), np.sin(2 * np.pi * i / self.n))) for i in range(self.n)]
+        else:
+            self.nodes = [MCA_node(i, cc) for i, cc in zip(range(self.n), center_coordinates)]
+        
+        self.vertices = []
+        self._setup_vertices()
+    
+    def _setup_vertices(self):
+        for i in range(self.n):
+            for j in range(i, self.n):
+                vertex = None
+                if self.P[i, j] > 0 and self.P[j, i] > 0:
+                    vertex = MCA_vertex(i, j, MCA_vertex_type.BOTH)
+                elif self.P[i, j] > 0:
+                    vertex = MCA_vertex(i, j, MCA_vertex_type.FORWARD)
+                elif self.P[j, i] > 0:
+                    vertex = MCA_vertex(j, i, MCA_vertex_type.FORWARD)
+                if vertex is not None:
+                    self.vertices.append(vertex)
+                
